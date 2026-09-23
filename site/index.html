@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stock Radar">
+<title>Stock Radar</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{--bg:#0d1117;--card:#161b22;--line:#262d36;--tx:#e6edf3;--mut:#8b949e;--bull:#3fb950;--bear:#f85149;--neu:#d29922;--acc:#58a6ff;--fda:#a371f7}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,system-ui,Segoe UI,sans-serif;padding:0 16px calc(76px + env(safe-area-inset-bottom));max-width:640px;margin:auto}
+header{padding:calc(12px + env(safe-area-inset-top)) 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+h1{font-size:20px}
+.upd{color:var(--mut);font-size:12px;text-align:right}
+.btn{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:7px 12px;font-size:13px}
+.btn:active{opacity:.6}
+.banner{border:1px solid var(--neu);color:var(--neu);border-radius:10px;padding:8px 12px;font-size:13px;margin:6px 0}
+.banner.err{border-color:var(--bear);color:var(--bear)}
+.tools{display:flex;gap:8px;margin:6px 0}
+.tools input,.tools select{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:8px 10px;font-size:16px}
+.tools select{flex:0 0 42%}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:6px 0 10px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--mut);border-radius:999px;padding:6px 12px;font-size:13px}
+.chip.on{color:var(--bg);background:var(--acc);border-color:var(--acc)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card.stale{opacity:.75;border-style:dashed}
+.top{display:flex;justify-content:space-between;gap:10px}
+.sym{font-size:18px;font-weight:700}
+.nm{color:var(--mut);font-size:13px}
+.px{text-align:right;font-weight:600;white-space:nowrap}
+.chg{font-size:13px}
+.up{color:var(--bull)}.dn{color:var(--bear)}
+.badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid;vertical-align:2px}
+.Bullish{color:var(--bull);border-color:var(--bull)}.Bearish{color:var(--bear);border-color:var(--bear)}.Neutral{color:var(--neu);border-color:var(--neu)}
+.soon{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;margin-top:12px}
+.lbl{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.val{font-size:14px;font-weight:600}
+.full{grid-column:1/-1}
+.news a{display:block;color:var(--tx);text-decoration:none;font-size:13px;padding:6px 0;border-top:1px solid var(--line)}
+.news a span{color:var(--mut);font-size:11px}
+.tag{font-size:11px;padding:1px 7px;border-radius:6px;background:#1f2a37;color:var(--acc);margin-right:6px}
+.tag.FDA{color:var(--fda)}
+details{margin-top:10px;font-size:12px;color:var(--mut)}
+summary{cursor:pointer;padding:4px 0}
+input[type=date]{background:var(--bg);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:14px;width:100%}
+.day{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin:16px 0 6px}
+.ev{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:14px}
+.ev.high{border-left-color:var(--bear)}.ev.FDA{border-left-color:var(--fda)}.ev.Earnings{border-left-color:var(--neu)}
+.ev.mine{box-shadow:inset 0 0 0 1px var(--acc)}
+.ev small{color:var(--mut)}
+.ev a{color:inherit}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{padding:5px 4px;border-top:1px solid var(--line);text-align:left;vertical-align:top;word-break:break-word}
+th{color:var(--mut);font-weight:600}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-weight:700;font-size:13px}
+.pill.ok{background:var(--bull);color:var(--bg)}.pill.warn{background:var(--neu);color:var(--bg)}.pill.error{background:var(--bear);color:var(--bg)}
+.dbg h3{font-size:14px;margin:16px 0 6px}
+.dbg li{font-size:12px;margin:4px 0 4px 16px;color:var(--neu)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#0d1117ee;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;max-width:220px;background:none;border:0;color:var(--mut);font-size:14px;padding:14px 4px}
+nav button.on{color:var(--acc);font-weight:700}
+.empty,.foot{color:var(--mut);font-size:12px;text-align:center;padding:20px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Stock Radar</h1>
+  <div style="display:flex;gap:8px;align-items:center"><span class="upd" id="upd"></span><button class="btn" id="refresh" aria-label="Refresh">↻</button></div>
+</header>
+<div id="banner"></div>
+<div id="controls"></div>
+<main id="main"><p class="empty">Loading…</p></main>
+<p class="foot">Information only, not financial advice. Scores are rough and can be wrong. Trading can lose money.</p>
+<nav>
+  <button data-tab="stocks" class="on">Stocks</button>
+  <button data-tab="cal">Calendar</button>
+  <button data-tab="debug">Debug</button>
+</nav>
+
+<script>
+"use strict";
+const APP_VERSION = "2.0.0";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https?:\/\//i.test(u || "") ? u : "#";
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
+};
+const localISO = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const fmtDate = iso => iso ? new Date(iso + "T12:00:00").toLocaleDateString(undefined, {weekday:"short", month:"short", day:"numeric"}) : "None";
+const pct = v => v == null ? "n/a" : (v > 0 ? "+" : "") + v.toFixed(1) + "%";
+const daysTo = iso => Math.round((new Date(iso + "T12:00:00") - new Date(localISO() + "T12:00:00")) / 864e5);
+const inDays = iso => { const n = daysTo(iso); return n === 0 ? "today" : n === 1 ? "tomorrow" : n < 0 ? `${-n}d ago` : `in ${n}d`; };
+
+// ---- client-side debug capture ----
+const CLIENT = { errors: [], loads: [] };
+window.addEventListener("error", e => CLIENT.errors.push(`${e.message} @ ${e.filename?.split("/").pop()}:${e.lineno}`));
+window.addEventListener("unhandledrejection", e => CLIENT.errors.push("Promise: " + (e.reason?.message || e.reason)));
+
+// ---- state ----
+let stocks = [], events = [], debug = null, updated = null, loadError = null;
+let tab = store.get("tab", "stocks"), filter = "All", calFilter = "All", query = "", sort = store.get("sort", "event");
+const overrides = store.get("entryOverrides", {});
+const FILTERS = {
+  All: () => true,
+  Earnings: s => s.event_type === "Earnings",
+  FDA: s => /^FDA/.test(s.event_type || ""),
+  Bullish: s => s.expectation === "Bullish",
+  Bearish: s => s.expectation === "Bearish",
+  "Entry ≤3d": s => daysTo(overrides[s.symbol] || s.entry_date) <= 3,
+  Watchlist: s => s.why === "My watchlist",
+};
+const SORTS = {
+  event: ["Soonest event", (a, b) => (a.event_date || "9999").localeCompare(b.event_date || "9999")],
+  score: ["Most bullish", (a, b) => b.score - a.score],
+  bear: ["Most bearish", (a, b) => a.score - b.score],
+  rr: ["Best reward:risk", (a, b) => (b.reward_risk ?? -99) - (a.reward_risk ?? -99)],
+  move: ["Biggest move today", (a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct)],
+  beta: ["Highest beta", (a, b) => (b.beta ?? -99) - (a.beta ?? -99)],
+};
+
+// ---- data ----
+async function getJSON(path) {
+  const t = performance.now();
+  const r = await fetch(`${path}?t=${Date.now()}`, {cache: "no-store"});
+  const text = await r.text();
+  CLIENT.loads.push({path, status: r.status, ms: Math.round(performance.now() - t), bytes: text.length});
+  if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`);
+  return JSON.parse(text);
+}
+
+async function load() {
+  CLIENT.loads = []; loadError = null;
+  $("refresh").disabled = true;
+  try {
+    const [s, c] = await Promise.all([getJSON("data/stocks.json"), getJSON("data/calendar.json")]);
+    stocks = s.stocks || []; events = c.events || []; updated = s.updated;
+  } catch (e) { loadError = e.message; }
+  try { debug = await getJSON("data/debug.json"); } catch { debug = null; }
+  $("refresh").disabled = false;
+  render();
+}
+
+// ---- stale detection ----
+function staleInfo() {
+  if (loadError) return {cls: "err", msg: `Could not load data (${loadError}). Check the Debug tab.`};
+  if (!updated) return null;
+  const ageMin = (Date.now() - new Date(updated)) / 6e4;
+  const et = new Date(new Date().toLocaleString("en-US", {timeZone: "America/New_York"}));
+  const mins = et.getHours() * 60 + et.getMinutes(), wk = et.getDay() > 0 && et.getDay() < 6;
+  const marketHours = wk && mins >= 570 && mins <= 960;
+  const limit = marketHours ? 90 : 26 * 60;
+  if (stocks.some(s => s.stale)) return {cls: "err", msg: "Latest fetch failed. Showing last good data. See Debug tab."};
+  if (ageMin > limit) return {cls: "", msg: `Data is ${Math.round(ageMin / 60)}h old. The scheduled update may have stopped. See Debug tab.`};
+  if (debug?.status === "error") return {cls: "err", msg: "Last data run had errors. See Debug tab."};
+  return null;
+}
+
+// ---- views ----
+function stockCard(s) {
+  const entry = overrides[s.symbol] || s.entry_date;
+  const edays = daysTo(entry);
+  const ev = s.event_type
+    ? `<span class="tag ${/^FDA/.test(s.event_type) ? "FDA" : ""}">${esc(s.event_type)}</span>${s.event_date ? `${esc(fmtDate(s.event_date))} (${inDays(s.event_date)})` : "no date"}${s.event_detail ? `<div class="nm">${esc(s.event_detail)}</div>` : ""}`
+    : "None scheduled";
+  const news = s.recent_news?.length
+    ? s.recent_news.slice(0, 3).map(n => `<a href="${esc(safeUrl(n.url))}" target="_blank" rel="noopener">${esc(n.title)}<br><span>${esc(n.source)} · ${esc(n.published)}</span></a>`).join("")
+    : `<span class="nm">No recent news found</span>`;
+  const p = s.score_parts || {};
+  const rr = s.reward_risk == null ? "n/a" : `${s.reward_risk.toFixed(1)} : 1`;
+  return `<div class="card ${s.stale ? "stale" : ""}">
+    <div class="top">
+      <div><div class="sym">${esc(s.symbol)} <span class="badge ${esc(s.expectation)}">${esc(s.expectation)}</span>
+        ${edays >= 0 && edays <= 1 ? `<span class="badge soon">Entry ${edays ? "tomorrow" : "today"}</span>` : ""}</div>
+        <div class="nm">${esc(s.name)} · ${esc(s.why)}${s.stale ? " · stale" : ""}</div></div>
+      <div class="px">$${Number(s.price).toFixed(2)}<div class="chg ${s.change_pct >= 0 ? "up" : "dn"}">${pct(s.change_pct)}</div></div>
+    </div>
+    <div class="grid">
+      <div><div class="lbl">Beta</div><div class="val">${s.beta ?? "n/a"}</div></div>
+      <div><div class="lbl">Next earnings</div><div class="val">${esc(fmtDate(s.next_earnings))}</div></div>
+      <div><div class="lbl">Upside</div><div class="val up">${pct(s.upside_pct)}</div></div>
+      <div><div class="lbl">Downside</div><div class="val dn">${pct(s.downside_pct)}</div></div>
+      <div class="full"><div class="lbl">Upcoming event</div><div class="val">${ev}</div></div>
+      <div><div class="lbl">Date of entry</div><input type="date" data-sym="${esc(s.symbol)}" value="${esc(entry)}" aria-label="Entry date for ${esc(s.symbol)}"></div>
+      <div><div class="lbl">Exit by</div><div class="val">${s.exit_date ? esc(fmtDate(s.exit_date)) : "n/a"}</div>
+        <div class="lbl" style="margin-top:6px">Reward : risk</div><div class="val">${rr}</div></div>
+      <div class="full nm">${esc(s.entry_note)}${overrides[s.symbol] ? " (You changed the entry date.)" : ""}</div>
+      <div class="full news"><div class="lbl">Recent news</div>${news}</div>
+    </div>
+    <details><summary>Why ${esc(s.expectation)}? Score ${s.score}</summary>
+      <p>Analyst: ${esc(p.analyst_recommendation || "n/a")} (${p.analyst_rating ?? "n/a"} / 5, 1 = strong buy).
+      Target range: ${s.targets?.low ? `$${s.targets.low} to $${s.targets.high}, avg $${s.targets.mean}` : "n/a"}.<br>
+      News: ${p.news_bull ?? 0} bullish vs ${p.news_bear ?? 0} bearish keywords.<br>
+      Trend vs 50-day avg: ${p.trend_vs_50d == null ? "n/a" : pct(p.trend_vs_50d * 100)}. 5-day move: ${p.momentum_5d == null ? "n/a" : pct(p.momentum_5d * 100)}.<br>
+      Blend: 40% analyst, 30% news, 30% trend. Upside = avg analyst target. Downside = tighter of lowest target or 2x ATR. Data: ${esc(s.data_source)}.</p>
+    </details></div>`;
+}
+
+function stocksView() {
+  const q = query.trim().toUpperCase();
+  const base = stocks.filter(s => !q || s.symbol.includes(q) || (s.name || "").toUpperCase().includes(q));
+  $("controls").innerHTML = `
+    <div class="tools"><input id="q" type="search" placeholder="Search ticker or name" value="${esc(query)}" autocomplete="off" autocapitalize="characters">
+    <select id="sort">${Object.entries(SORTS).map(([k, [l]]) => `<option value="${k}" ${k === sort ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+    <div class="chips">${Object.keys(FILTERS).map(f => `<button class="chip ${f === filter ? "on" : ""}" data-f="${esc(f)}">${esc(f)} ${base.filter(FILTERS[f]).length}</button>`).join("")}</div>`;
+  const list = base.filter(FILTERS[filter]).sort(SORTS[sort][1]);
+  $("main").innerHTML = list.length ? list.map(stockCard).join("") : `<p class="empty">${stocks.length ? "Nothing matches." : "No stocks loaded. Check the Debug tab."}</p>`;
+}
+
+function calendarView() {
+  const mine = new Set(stocks.map(s => s.symbol));
+  const earn = stocks.filter(s => s.next_earnings).map(s => ({date: s.next_earnings, kind: "Earnings", title: `${s.symbol} earnings (${s.name})`, impact: "medium", symbol: s.symbol}));
+  const all = events.concat(earn);
+  const kinds = ["All", ...new Set(all.map(e => e.kind))];
+  $("controls").innerHTML = `<div class="chips">${kinds.map(k => `<button class="chip ${k === calFilter ? "on" : ""}" data-cf="${esc(k)}">${esc(k)}</button>`).join("")}</div>`;
+  const today = localISO();
+  const list = all.filter(e => e.date >= today && (calFilter === "All" || e.kind === calFilter))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind));
+  if (!list.length) { $("main").innerHTML = `<p class="empty">No upcoming events. Add FRED and Finnhub keys for macro and FDA dates.</p>`; return; }
+  let out = "", last = "";
+  for (const e of list) {
+    if (e.date !== last) { out += `<div class="day">${esc(fmtDate(e.date))} · ${inDays(e.date)}</div>`; last = e.date; }
+    const t = e.url ? `<a href="${esc(safeUrl(e.url))}" target="_blank" rel="noopener">${esc(e.title)}</a>` : esc(e.title);
+    out += `<div class="ev ${esc(e.impact)} ${esc(e.kind)} ${e.symbol && mine.has(e.symbol) ? "mine" : ""}"><small>${esc(e.kind)}${e.impact === "high" ? " · HIGH IMPACT" : ""}${e.symbol && mine.has(e.symbol) ? " · on your list" : ""}</small><br>${t}</div>`;
+  }
+  $("main").innerHTML = out;
+}
+
+function debugReport() {
+  let ls = false; try { localStorage.setItem("_t", "1"); localStorage.removeItem("_t"); ls = true; } catch {}
+  return {
+    app_version: APP_VERSION, page: location.href.split("?")[0], now: new Date().toISOString(),
+    data_updated: updated, load_error: loadError, stocks: stocks.length, events: events.length,
+    stale_stocks: stocks.filter(s => s.stale).length,
+    client: {online: navigator.onLine, standalone: matchMedia("(display-mode: standalone)").matches || !!navigator.standalone,
+             localStorage: ls, viewport: `${innerWidth}x${innerHeight}`, ua: navigator.userAgent,
+             entry_overrides: Object.keys(overrides).length, loads: CLIENT.loads, js_errors: CLIENT.errors},
+    server: debug,
+  };
+}
+
+function debugView() {
+  $("controls").innerHTML = "";
+  const r = debugReport(), d = debug;
+  const kv = o => `<table>${Object.entries(o).map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(typeof v === "object" ? JSON.stringify(v) : v)}</td></tr>`).join("")}</table>`;
+  let html = `<div class="dbg">`;
+  if (d) {
+    html += `<div class="card"><span class="pill ${esc(d.status)}">${esc((d.status || "?").toUpperCase())}</span>
+      <span class="nm"> last data run ${d.finished ? new Date(d.finished).toLocaleString() : "?"} · ${d.duration_s ?? "?"}s${d.mode ? " · " + esc(d.mode) : ""}</span>
+      <h3>Counts</h3>${kv(d.counts || {})}
+      <h3>API keys present</h3>${kv(d.keys_present || {})}
+      <h3>Warnings</h3>${d.warnings?.length ? `<ul>${d.warnings.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : `<p class="nm">None</p>`}
+      <h3>Sources</h3><table><tr><th>Source</th><th>OK</th><th>Fail</th><th>Items</th><th>ms</th></tr>
+        ${Object.entries(d.sources || {}).sort().map(([k, v]) => `<tr><td>${esc(k)}${v.last_error ? `<div class="dn">${esc(v.last_error)}</div>` : ""}${v.note ? `<div class="nm">${esc(v.note)}</div>` : ""}</td><td>${v.ok}</td><td class="${v.fail ? "dn" : ""}">${v.fail}</td><td>${v.items}</td><td>${v.ms}</td></tr>`).join("")}</table>
+      <h3>Failed symbols</h3>${Object.keys(d.symbols_failed || {}).length ? kv(d.symbols_failed) : `<p class="nm">None</p>`}
+      <h3>Skipped (filters)</h3>${Object.keys(d.symbols_skipped || {}).length ? kv(d.symbols_skipped) : `<p class="nm">None</p>`}
+      <h3>Versions</h3>${kv(d.versions || {})}</div>`;
+  } else {
+    html += `<div class="banner err">No debug.json found. The GitHub Action has not run yet, or the deploy failed. Open the repo's Actions tab.</div>`;
+  }
+  html += `<div class="card"><h3 style="margin-top:0">This device</h3>${kv({app: r.app_version, data_updated: r.data_updated || "none", load_error: r.load_error || "none", online: r.client.online, home_screen_app: r.client.standalone, local_storage: r.client.localStorage, viewport: r.client.viewport, entry_overrides: r.client.entry_overrides})}
+    <h3>Requests</h3>${r.client.loads.length ? `<table><tr><th>File</th><th>HTTP</th><th>ms</th><th>bytes</th></tr>${r.client.loads.map(l => `<tr><td>${esc(l.path)}</td><td>${l.status}</td><td>${l.ms}</td><td>${l.bytes}</td></tr>`).join("")}</table>` : `<p class="nm">None</p>`}
+    <h3>JavaScript errors</h3>${r.client.js_errors.length ? `<ul>${r.client.js_errors.map(e => `<li>${esc(e)}</li>`).join("")}</ul>` : `<p class="nm">None</p>`}
+    <div class="row"><button class="btn" id="copy">Copy debug report</button><button class="btn" id="reset">Reset my entry dates</button></div>
+    <p class="nm" id="dbgmsg" style="margin-top:8px">Paste the copied report to Claude to get help. It contains no API keys.</p></div></div>`;
+  $("main").innerHTML = html;
+}
+
+function render() {
+  const st = staleInfo();
+  $("banner").innerHTML = st ? `<div class="banner ${st.cls}">${esc(st.msg)}</div>` : "";
+  $("upd").textContent = updated ? "Updated " + new Date(updated).toLocaleString(undefined, {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}) : "";
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  ({stocks: stocksView, cal: calendarView, debug: debugView}[tab] || stocksView)();
+}
+
+// ---- events ----
+let resetArmed = false;
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.tab) { tab = t.dataset.tab; store.set("tab", tab); scrollTo(0, 0); render(); }
+  else if (t.dataset.f) { filter = t.dataset.f; render(); }
+  else if (t.dataset.cf) { calFilter = t.dataset.cf; render(); }
+  else if (t.id === "refresh") { load(); }
+  else if (t.id === "copy") {
+    const txt = JSON.stringify(debugReport(), null, 1);
+    try { await navigator.clipboard.writeText(txt); $("dbgmsg").textContent = "Copied. Paste it to Claude."; }
+    catch { $("dbgmsg").textContent = "Clipboard blocked. Long-press to copy the report below."; $("dbgmsg").insertAdjacentHTML("afterend", `<textarea style="width:100%;height:200px;margin-top:8px;background:var(--bg);color:var(--tx)">${esc(txt)}</textarea>`); }
+  }
+  else if (t.id === "reset") {
+    if (!resetArmed) { resetArmed = true; t.textContent = "Tap again to erase your entry dates"; setTimeout(() => { resetArmed = false; t.textContent = "Reset my entry dates"; }, 4000); return; }
+    for (const k of Object.keys(overrides)) delete overrides[k];
+    store.set("entryOverrides", overrides); resetArmed = false; render();
+  }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "q") { query = e.target.value; const pos = e.target.selectionStart; render(); const q = $("q"); q.focus(); q.setSelectionRange(pos, pos); }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "sort") { sort = e.target.value; store.set("sort", sort); render(); }
+  else if (e.target.dataset.sym) {
+    const s = e.target.dataset.sym;
+    if (e.target.value) overrides[s] = e.target.value; else delete overrides[s];
+    store.set("entryOverrides", overrides);
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && updated && Date.now() - new Date(updated) > 30 * 6e4) load();
+});
+
+load();
+</script>
+</body>
+</html>

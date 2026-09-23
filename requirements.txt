@@ -1,0 +1,4 @@
+yfinance>=1.0
+requests
+pandas
+holidays>=0.50

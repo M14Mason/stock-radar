@@ -1,0 +1,3 @@
+# One ticker per line or space separated. These are always included.
+NVDA
+TSLA
