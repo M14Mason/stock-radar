@@ -1,0 +1,82 @@
+name: Update and deploy
+
+on:
+  schedule:
+    - cron: "*/30 13-21 * * 1-5"
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      status: ${{ steps.fetch.outputs.status }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack uploaded zip (first run only)
+        run: |
+          if [ -f stock-radar.zip ]; then
+            unzip -q -o stock-radar.zip -d /tmp/unpack
+            src=/tmp/unpack; [ -d /tmp/unpack/stock-radar ] && src=/tmp/unpack/stock-radar
+            rm -rf "$src/.github" "$src/.git"
+            cp -a "$src"/. ./
+            git rm -q --cached stock-radar.zip && rm stock-radar.zip
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -q -m "Unpack stock-radar.zip"
+            git push
+          else
+            echo "No zip found, nothing to unpack."
+          fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Offline tests
+        run: python tests/test_logic.py
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Fetch data
+        id: fetch
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          PAGES_URL: ${{ steps.pages.outputs.base_url }}
+        run: python scripts/fetch_data.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  health:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check data health
+        run: |
+          if [ "${{ needs.build.outputs.status }}" = "error" ]; then
+            echo "::error::Data fetch failed. Open the Debug tab in the app."
+            exit 1
+          fi
