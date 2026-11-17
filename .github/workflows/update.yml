@@ -80,3 +80,23 @@ jobs:
             echo "::error::Data fetch failed. Open the Debug tab in the app."
             exit 1
           fi
+
+  # GitHub turns off scheduled workflows after 60 days with no repo activity.
+  # Once a week this re-enables this workflow through the GitHub API, which
+  # resets that 60-day clock without adding commits to the repo.
+  keepalive:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Keep the schedule alive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%u)" = "1" ]; then
+            gh api -X PUT "repos/${{ github.repository }}/actions/workflows/update.yml/enable"
+            echo "Re-enabled update.yml"
+          else
+            echo "Not Monday, skipping."
+          fi
